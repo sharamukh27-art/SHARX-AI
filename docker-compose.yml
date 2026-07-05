@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: sharx-ai-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - FASTAPI_ENV=development
+      - DEBUG=true
+      - LOG_LEVEL=INFO
+      - AI_PROVIDER=ollama
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - DATABASE_URL=sqlite:///./sharx_ai.db
+      - CHROMA_PERSIST_DIR=./chroma_data
+    volumes:
+      - ./backend:/app
+      - backend_data:/app/data
+    depends_on:
+      - ollama
+    networks:
+      - sharx-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: sharx-ai-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    volumes:
+      - ./frontend/src:/app/src
+    depends_on:
+      - backend
+    networks:
+      - sharx-network
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: sharx-ai-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - sharx-network
+
+volumes:
+  backend_data:
+  ollama_data:
+
+networks:
+  sharx-network:
+    driver: bridge
